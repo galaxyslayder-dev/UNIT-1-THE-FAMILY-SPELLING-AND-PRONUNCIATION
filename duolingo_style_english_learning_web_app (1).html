@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>English Learning Hub - Production</title>
+<style>
+body { font-family: Arial; background:#f7f7f7; margin:0; }
+.container { max-width:700px; margin:auto; padding:20px; }
+.card { background:white; border-radius:16px; padding:20px; margin-bottom:20px; box-shadow:0 6px 15px rgba(0,0,0,0.1); }
+button { padding:10px 16px; border:none; border-radius:12px; cursor:pointer; font-weight:bold; }
+.primary { background:#58cc02; color:white; }
+.option { padding:14px; border:2px solid #ddd; border-radius:12px; margin:8px 0; cursor:pointer; transition:0.2s; }
+.option:hover { transform:scale(1.02); }
+.option.selected { border-color:#58cc02; background:#eaffd5; }
+.feedback-bar { position:fixed; bottom:0; left:0; right:0; padding:20px; text-align:center; font-weight:bold; font-size:18px; }
+.correct { background:#58cc02; color:white; }
+.wrong { background:#ff4b4b; color:white; }
+.hidden { display:none; }
+.progress { height:12px; background:#ddd; border-radius:10px; margin-bottom:20px; }
+.progress-bar { height:12px; background:#58cc02; width:0%; border-radius:10px; transition:0.3s; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Unit 1: Family</h1>
+<div class="progress"><div id="progress" class="progress-bar"></div></div>
+<div id="app"></div>
+</div>
+<div id="feedback" class="feedback-bar hidden"></div>
+
+<audio id="correctSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<audio id="wrongSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+
+<script>
+let step = 0;
+
+const lesson = [
+{type:"theory",content:`<h3>Dialogue</h3><p>Linh: Is this your husband?<br>Sarah: Yes, he is.</p>`},
+{type:"theory",content:`<h3>Vocabulary</h3><p>Husband, wife, son, daughter...</p>`},
+
+{type:"fill",question:"He is a good ___ to his wife.",answer:"husband",hint:"Marriage word"},
+
+{type:"mcq",question:"Which is a female child?",options:["son","daughter","uncle"],answer:"daughter"},
+
+{type:"drag",pairs:["husband","wife","son","daughter"]}
+];
+
+function updateProgress(){
+ document.getElementById("progress").style.width=((step/lesson.length)*100)+"%";
+}
+
+function render(){
+ updateProgress();
+ const app=document.getElementById("app");
+ const item=lesson[step];
+
+ if(item.type==="theory"){
+  app.innerHTML=`<div class='card'>${item.content}<br><button class='primary' onclick='next()'>Continue</button></div>`;
+ }
+
+ if(item.type==="fill"){
+  app.innerHTML=`<div class='card'><p>${item.question}</p><input id='input'><button onclick='checkFill()'>Check</button><div onclick='alert("${item.hint}")'>Hint</div></div>`;
+ }
+
+ if(item.type==="mcq"){
+  let opts="";
+  item.options.forEach(o=>{
+    opts+=`<div class='option' onclick="select('${o}')">${o}</div>`;
+  });
+  app.innerHTML=`<div class='card'><p>${item.question}</p>${opts}</div>`;
+ }
+
+ if(item.type==="drag"){
+  let html=`<div class='card'><p>Drag words into order</p>`;
+  item.pairs.forEach((p,i)=>{
+    html+=`<div draggable='true' ondragstart='drag(event)' id='drag${i}' class='option'>${p}</div>`;
+  });
+  html+=`<div ondrop='drop(event)' ondragover='allowDrop(event)' style='margin-top:20px; padding:20px; border:2px dashed #aaa;'>Drop here</div></div>`;
+  app.innerHTML=html;
+ }
+}
+
+function next(){
+ step++;
+ if(step>=lesson.length){
+  document.getElementById("app").innerHTML="<h2>🎉 Lesson Complete!</h2>";
+  return;
+ }
+ render();
+}
+
+function showFeedback(correct){
+ const fb=document.getElementById("feedback");
+ fb.className=`feedback-bar ${correct?'correct':'wrong'}`;
+ fb.innerText=correct?"Correct!":"Wrong!";
+ fb.classList.remove("hidden");
+
+ if(correct) document.getElementById("correctSound").play();
+ else document.getElementById("wrongSound").play();
+
+ setTimeout(()=>{
+  fb.classList.add("hidden");
+  if(correct) next();
+ },1000);
+}
+
+function checkFill(){
+ const val=document.getElementById("input").value.trim().toLowerCase();
+ showFeedback(val===lesson[step].answer);
+}
+
+function select(choice){
+ document.querySelectorAll('.option').forEach(el=>el.classList.remove('selected'));
+ event.target.classList.add('selected');
+ showFeedback(choice===lesson[step].answer);
+}
+
+function allowDrop(ev){ev.preventDefault();}
+function drag(ev){ev.dataTransfer.setData("text", ev.target.id);}
+function drop(ev){
+ ev.preventDefault();
+ const data=ev.dataTransfer.getData("text");
+ ev.target.appendChild(document.getElementById(data));
+ showFeedback(true);
+}
+
+render();
+</script>
+</body>
+</html>
